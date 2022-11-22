@@ -2,13 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 /**
  * @notice - Gives the user an the ability to mint ERC721 tokens.
  */
-contract NftFactory is ERC721URIStorage, Ownable {
+contract NftFactory is ERC721URIStorage {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIds;
@@ -28,7 +27,6 @@ contract NftFactory is ERC721URIStorage, Ownable {
      */
     function createCollectable(string memory _tokenURI)
         public
-        onlyOwner
         returns (uint256)
     {
         _tokenIds.increment();
