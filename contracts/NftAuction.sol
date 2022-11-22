@@ -30,6 +30,8 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
     ) external payable nonReentrant {
         require(msg.value == listingFee, "listNft: Wrong amount");
         DLLStack._pushToStack(tokenFactAddr, tokenId, startingPrice);
+        IERC721(tokenFactAddr).transferFrom(msg.sender, address(this), tokenId);
+
     }
 
     function delistNft(bytes32 key) external {
