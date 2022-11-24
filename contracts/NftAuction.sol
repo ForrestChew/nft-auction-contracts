@@ -34,12 +34,14 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
 
     }
 
-    function delistNft(bytes32 key) external {
+    function delistNft(address tokenFactAddr, bytes32 key) external {
         require(
             msg.sender == DLLStack._nodes[key].nftListing.seller,
             "delistNft: Not lister"
         );
-        DLLStack._removeIndividualNode(key);
+        uint256 tokenId = DLLStack._nodes[key].nftListing.tokenId;
+        DLLStack._removeStackItem(key);
+        IERC721(tokenFactAddr).transferFrom(address(this), msg.sender, tokenId);
     }
 
     function auctionNextNft() external {
