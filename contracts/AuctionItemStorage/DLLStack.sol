@@ -58,7 +58,7 @@ contract DLLStack is AuctionItemFactory {
         stackSize--;
     }
 
-    function _removeIndividualNode(bytes32 nodeKey) internal {
+    function _removeStackItem(bytes32 nodeKey) internal {
         _nodes[_nodes[nodeKey].prev].next = _nodes[nodeKey].next;
         _nodes[_nodes[nodeKey].next].prev = _nodes[nodeKey].prev;
         delete _nodes[nodeKey];
