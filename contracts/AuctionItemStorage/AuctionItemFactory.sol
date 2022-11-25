@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 contract AuctionItemFactory {
     struct AuctionItem {
         uint256 tokenId;
-        uint256 startingPrice;
+        uint256 price;
+        uint256 startTime;
         bool isAuctioning;
         address tokenFactAddr;
         address seller;
@@ -22,12 +23,13 @@ contract AuctionItemFactory {
     function _createItem(
         address _tokenFactAddr,
         uint256 _tokenId,
-        uint256 _startingPrice
+        uint256 _price
     ) internal view returns (AuctionItem memory) {
         return (
             AuctionItem({
                 tokenId: _tokenId,
-                startingPrice: _startingPrice,
+                price: _price,
+                startTime: block.timestamp,
                 isAuctioning: false,
                 tokenFactAddr: _tokenFactAddr,
                 seller: msg.sender,
