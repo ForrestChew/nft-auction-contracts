@@ -1,15 +1,15 @@
 const deployNftFactoryFixture = async () => {
   const [nftFactoryDeployer] = await ethers.getSigners();
-  const NftFactory = await ethers.getContractFactory('NftFactory');
-  const nftFactory = await NftFactory.deploy('TestToken', 'TT');
+  const NftFactory = await ethers.getContractFactory("NftFactory");
+  const nftFactory = await NftFactory.deploy("TestToken", "TT");
 
   return { nftFactory, nftFactoryDeployer };
 };
 
 const deployNftAuctionFixture = async () => {
-  const listingFee = ethers.utils.parseEther('0.1');
+  const listingFee = ethers.utils.parseEther("0.1");
   const [auctionOwner, randAccount_1] = await ethers.getSigners();
-  const NftAuction = await ethers.getContractFactory('NftAuction');
+  const NftAuction = await ethers.getContractFactory("NftAuction");
   const nftAuction = await NftAuction.deploy(auctionOwner.address, listingFee);
 
   return { nftAuction, auctionOwner, randAccount_1 };
@@ -30,17 +30,17 @@ const contractFixtures = async () => {
 
 const createSingleNftAndApproveAuction = async () => {
   const { nftAuction, nftFactory, randAccount_1 } = await contractFixtures();
-  const tokenUri = 'https://testtokenuri.uri';
+  const tokenUri = "https://testtokenuri.uri";
   await nftFactory.connect(randAccount_1).createCollectable(tokenUri);
   const tokenId = 1;
   await nftFactory.connect(randAccount_1).approve(nftAuction.address, tokenId);
 
-  return { nftFactory, nftAuction, randAccount_1 };
+  return { nftFactory, nftAuction, randAccount_1, tokenId };
 };
 
 const createMultipleNftsAndApproveAuction = async () => {
   const { nftAuction, nftFactory, randAccount_1 } = await contractFixtures();
-  const tokenUri = 'https://testtokenuri.uri';
+  const tokenUri = "https://testtokenuri.uri";
   for (let i = 0; i < 5; i++) {
     const tokenId = i + 1;
     await nftFactory.connect(randAccount_1).createCollectable(tokenUri);
@@ -54,8 +54,8 @@ const createMultipleNftsAndApproveAuction = async () => {
 const listMultipleNftsForAuction = async () => {
   const { nftAuction, nftFactory, randAccount_1 } =
     await createMultipleNftsAndApproveAuction();
-  const startingPrice = ethers.utils.parseEther('1');
-  const listingFee = ethers.utils.parseEther('0.1');
+  const startingPrice = ethers.utils.parseEther("1");
+  const listingFee = ethers.utils.parseEther("0.1");
   for (let i = 0; i < 3; i++) {
     const tokenId = i + 1;
     await nftAuction
@@ -70,6 +70,7 @@ const listMultipleNftsForAuction = async () => {
 
 module.exports = {
   deployNftFactoryFixture,
+  deployNftAuctionFixture,
   contractFixtures,
   createSingleNftAndApproveAuction,
   createMultipleNftsAndApproveAuction,
