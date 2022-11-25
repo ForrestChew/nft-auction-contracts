@@ -18,13 +18,7 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
     address public auctionOwner;
     uint256 public listingFee;
 
-    event NftListing(
-        address seller,
-        address tokenFactAddr,
-        uint256 tokenId,
-        uint256 price
-    );
-    event NftDelisting(
+    event AuctionNft(
         address seller,
         address tokenFactAddr,
         uint256 tokenId,
@@ -67,7 +61,7 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         require(msg.value == listingFee, "listNft: Incorrect amount");
         DLLStack._pushToStack(tokenFactAddr, tokenId, price);
         IERC721(tokenFactAddr).transferFrom(msg.sender, address(this), tokenId);
-        emit NftListing(msg.sender, tokenFactAddr, tokenId, price);
+        emit AuctionNft(msg.sender, tokenFactAddr, tokenId, price);
     }
 
     function delistNft(address tokenFactAddr, bytes32 key)
@@ -76,8 +70,10 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         auctionInactive
     {
         uint256 tokenId = DLLStack._nodes[key].nftListing.tokenId;
+        uint256 price = DLLStack._nodes[key].nftListing.price;
         DLLStack._removeStackItem(key);
         IERC721(tokenFactAddr).transferFrom(address(this), msg.sender, tokenId);
+        emit AuctionNft(msg.sender, tokenFactAddr, tokenId, price);
     }
 
     function changeNftPrice(bytes32 key, uint256 newPrice)
@@ -86,17 +82,38 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
     {
         uint256 price = DLLStack._nodes[key].nftListing.price;
         uint256 tokenId = DLLStack._nodes[key].nftListing.tokenId;
-        DLLStack._nodes[key].nftListing.price = newPrice;
+        DLLStack._changeNftListingPrice(key, newPrice);
         emit NewPrice(tokenId, price, newPrice);
     }
 
     function startAuction() external onlyOwner {
+        require(DLLStack.stackSize > 0, "startAuction: No listings");
+        DLLStack.Node memory firstListing = _getTopOfStack();
+        bytes32 firstListingKey = firstListing.key;
+        DLLStack._auctionItemStart(firstListingKey);
         auctionState = AuctionState.ACTIVE;
         emit AuctionStatus(true);
     }
 
+    // TODO: FIGURE OUT A BID SYSTEM.
+    // TODO: IMPLEMENT A WAY TO TRANSFER THE NFT TO EITHER THE HIGHEST BIDDER,
+    // OR BACK TO THE ORIGINAL SELLER IF NO ONE BIDS ON IT.
     function auctionNextNft() external onlyOwner {
+        DLLStack.Node memory listing = _getTopOfStack();
+        uint256 startTime = listing.nftListing.startTime;
+        require(
+            block.timestamp > startTime + 15 minutes,
+            "auctionNextNft: Not enough time has ellapsed"
+        );
         DLLStack._popFromStack();
+        DLLStack.Node memory nextListing = _getTopOfStack();
+        DLLStack._auctionItemStart(nextListing.key);
+        emit AuctionNft(
+            nextListing.nftListing.seller,
+            nextListing.nftListing.tokenFactAddr,
+            nextListing.nftListing.tokenId,
+            nextListing.nftListing.price
+        );
     }
 
     function changeListingFee(uint256 newFee) external onlyOwner {
