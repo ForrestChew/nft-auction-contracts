@@ -1,4 +1,7 @@
-const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const {
+  loadFixture,
+  mine,
+} = require("@nomicfoundation/hardhat-network-helpers");
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const {
@@ -147,12 +150,6 @@ describe("NftAuction", () => {
     });
   });
   describe("Delisting an Nft", () => {
-    it("Removes Nft from the top of the stack", async () => {
-      const { nftAuction } = await loadFixture(listMultipleNftsForAuction);
-      expect(await nftAuction.stackSize()).to.equal(3);
-      await nftAuction.auctionNextNft();
-      expect(await nftAuction.stackSize()).to.equal(2);
-    });
     it("Removes individual Nft listing from anywhere in stack", async () => {
       const { nftAuction, nftFactory, randAccount_1 } = await loadFixture(
         listMultipleNftsForAuction
@@ -185,11 +182,43 @@ describe("NftAuction", () => {
     });
   });
   describe("Starting Auction", () => {
-    it("Sets auction state to ACTIVE", async () => {
+    let nftAuctionInstance;
+    beforeEach(async () => {
       const { nftAuction } = await loadFixture(listMultipleNftsForAuction);
       await nftAuction.startAuction();
+      nftAuctionInstance = nftAuction;
+    });
+    it("Sets auction state to ACTIVE", async () => {
       const active = 1;
-      expect(await nftAuction.auctionState()).to.equal(active);
+      expect(await nftAuctionInstance.auctionState()).to.equal(active);
+    });
+    it("Sets isAuctioning to true for the first listing", async () => {
+      const currentNft = await nftAuctionInstance.getCurrentNft();
+      const tokenId = 3;
+      expect(currentNft[0][0]).to.equal(tokenId);
+      expect(currentNft[0][3]).to.equal(true);
+    });
+    describe("Auction Cycle", () => {
+      it("Sets the next Nft for auction", async () => {
+        const { nftAuction } = await loadFixture(listMultipleNftsForAuction);
+        expect(await nftAuction.stackSize()).to.equal(3);
+        await mine(1000);
+        await nftAuction.auctionNextNft();
+        const currentNft = await nftAuctionInstance.getCurrentNft();
+        expect(await nftAuction.stackSize()).to.equal(2);
+        const tokenId = 2;
+        expect(currentNft[0][0]).to.equal(tokenId);
+        expect(currentNft[0][3]).to.equal(true);
+      });
+    });
+    describe("Auction Cycle Reverts", () => {
+      it("Sets the next Nft for auction", async () => {
+        const { nftAuction } = await loadFixture(listMultipleNftsForAuction);
+        expect(await nftAuction.stackSize()).to.equal(3);
+        await expect(nftAuction.auctionNextNft()).to.be.revertedWith(
+          "auctionNextNft: Not enough time has ellapsed"
+        );
+      });
     });
   });
 });
