@@ -19,21 +19,16 @@ contract DLLStack is AuctionItemFactory {
      * @notice - Adds a token ID to the stack.
      * @param tokenFactAddr - Contract address to which the Nft ID belongs.
      * @param _tokenId - Nft ID.
-     * @param startingPrice - Price to begin bidding on Nft.
+     * @param Price - Price to begin bidding on Nft.
      */
     function _pushToStack(
         address tokenFactAddr,
         uint256 tokenId,
-        uint256 startingPrice
+        uint256 price
     ) internal {
         bytes32 nodeKey = bytes32(
             keccak256(
-                abi.encodePacked(
-                    tokenFactAddr,
-                    tokenId,
-                    startingPrice,
-                    block.timestamp
-                )
+                abi.encodePacked(tokenFactAddr, tokenId, price, block.timestamp)
             )
         );
         _nodes[_topOfStackKey].prev = nodeKey;
@@ -41,7 +36,7 @@ contract DLLStack is AuctionItemFactory {
             nftListing: AuctionItemFactory._createItem(
                 tokenFactAddr,
                 tokenId,
-                startingPrice
+                price
             ),
             key: nodeKey,
             next: _topOfStackKey,
@@ -63,6 +58,22 @@ contract DLLStack is AuctionItemFactory {
         _nodes[_nodes[nodeKey].next].prev = _nodes[nodeKey].prev;
         delete _nodes[nodeKey];
         stackSize--;
+    }
+
+    function _auctionItemStart(bytes32 nodeKey) internal {
+        _nodes[nodeKey].nftListing.isAuctioning = true;
+    }
+
+    function _changeNftListingOwner(bytes32 nodeKey, address newOwner)
+        internal
+    {
+        _nodes[nodeKey].nftListing.owner = newOwner;
+    }
+
+    function _changeNftListingPrice(bytes32 nodeKey, uint256 newPrice)
+        internal
+    {
+        _nodes[nodeKey].nftListing.price = newPrice;
     }
 
     function _getTopOfStack() internal view returns (Node memory) {
