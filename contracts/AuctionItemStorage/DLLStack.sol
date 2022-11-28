@@ -60,10 +60,6 @@ contract DLLStack is AuctionItemFactory {
         stackSize--;
     }
 
-    function _auctionItemStart(bytes32 nodeKey) internal {
-        _nodes[nodeKey].nftListing.isAuctioning = true;
-    }
-
     function _changeNftListingKeeper(bytes32 nodeKey, address newKeeper)
         internal
     {

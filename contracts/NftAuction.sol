@@ -94,9 +94,6 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
 
     function startAuction() external onlyOwner {
         require(DLLStack.stackSize > 0, "startAuction: No listings");
-        DLLStack.Node memory firstListing = _getTopOfStack();
-        bytes32 firstListingKey = firstListing.key;
-        DLLStack._auctionItemStart(firstListingKey);
         auctionState = AuctionState.ACTIVE;
         emit AuctionStatus(true);
     }
@@ -122,7 +119,6 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         _nftToKeeper(listing);
         DLLStack._popFromStack();
         DLLStack.Node memory nextListing = _getTopOfStack();
-        DLLStack._auctionItemStart(nextListing.key);
         emit AuctionNft(
             nextListing.nftListing.seller,
             nextListing.nftListing.tokenFactAddr,

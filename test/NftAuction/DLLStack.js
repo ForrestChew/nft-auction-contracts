@@ -30,7 +30,7 @@ describe("DoublyLinkedListStack", () => {
     expect(currentNft.length).to.equal(4);
   });
   it("Sets node nftListing", async () => {
-    const nftListingPropertiesAmount = 7;
+    const nftListingPropertiesAmount = 6;
     expect(currentNft[0].length).to.equal(nftListingPropertiesAmount);
   });
   it("Sets node key", async () => {

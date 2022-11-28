@@ -6,7 +6,6 @@ contract AuctionItemFactory {
         uint256 tokenId;
         uint256 price;
         uint256 startTime;
-        bool isAuctioning;
         address tokenFactAddr;
         address seller;
         address keeper;
@@ -30,7 +29,6 @@ contract AuctionItemFactory {
                 tokenId: _tokenId,
                 price: _price,
                 startTime: block.timestamp,
-                isAuctioning: false,
                 tokenFactAddr: _tokenFactAddr,
                 seller: msg.sender,
                 keeper: address(this)

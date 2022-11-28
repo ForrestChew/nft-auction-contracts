@@ -67,17 +67,14 @@ describe("NftAuction", () => {
       it("Sets listing startingTime to current block time", async () => {
         expect(currentNft[0][2]).to.be.greaterThan(0);
       });
-      it("Sets listing isAuctioning boolean to false", async () => {
-        expect(currentNft[0][3]).to.equal(false);
-      });
       it("Sets listing token factory addr to Nft collection addr", async () => {
-        expect(currentNft[0][4]).to.equal(nftFactAddr);
+        expect(currentNft[0][3]).to.equal(nftFactAddr);
       });
       it("Sets listing token seller addr to Nft lister", async () => {
-        expect(currentNft[0][5]).to.equal(randSigner.address);
+        expect(currentNft[0][4]).to.equal(randSigner.address);
       });
       it("Sets listing owner addr to Nft auction contract", async () => {
-        expect(currentNft[0][6]).to.equal(nftAuctionInstance.address);
+        expect(currentNft[0][5]).to.equal(nftAuctionInstance.address);
       });
       it("Transfers ownership of nft from lister to auction smart contract", async () => {
         const tokenId = 1;
@@ -199,12 +196,6 @@ describe("NftAuction", () => {
       const active = 1;
       expect(await nftAuctionInstance.auctionState()).to.equal(active);
     });
-    it("Sets isAuctioning to true for the first listing", async () => {
-      const currentNft = await nftAuctionInstance.getCurrentNft();
-      const tokenId = 3;
-      expect(currentNft[0][0]).to.equal(tokenId);
-      expect(currentNft[0][3]).to.equal(true);
-    });
     describe("Auction Cycle", () => {
       it("Sets the next Nft for auction", async () => {
         expect(await nftAuctionInstance.stackSize()).to.equal(3);
@@ -214,7 +205,6 @@ describe("NftAuction", () => {
         expect(await nftAuctionInstance.stackSize()).to.equal(2);
         const tokenId = 2;
         expect(currentNft[0][0]).to.equal(tokenId);
-        expect(currentNft[0][3]).to.equal(true);
       });
       it("Sets the listing keeper address to the highest", async () => {
         await nftAuctionInstance.startAuction();
