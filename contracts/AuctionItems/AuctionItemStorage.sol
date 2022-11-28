@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "./AuctionItemFactory.sol";
+import "./PostBidAuctionItemStorage.sol";
 
-contract AuctionItemStorage is AuctionItemFactory {
+contract AuctionItemStorage is AuctionItemFactory, PostBidAuctionItemStorage {
     struct Node {
         AuctionItem nftListing;
         bytes32 key;
@@ -47,9 +48,10 @@ contract AuctionItemStorage is AuctionItemFactory {
     }
 
     function _popFromStack() internal {
-        bytes32 topOfStackKeyTmp = _topOfStackKey;
+        // bytes32 topOfStackKeyTmp = _topOfStackKey;
         _topOfStackKey = _nodes[_topOfStackKey].next;
-        delete _nodes[topOfStackKeyTmp];
+        PostBidAuctionItemStorage._addPostBidItemKey(_topOfStackKey);
+        // delete _nodes[topOfStackKeyTmp];
         stackSize--;
     }
 
