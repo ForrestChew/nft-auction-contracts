@@ -10,6 +10,7 @@ const {
   createMultipleNftsAndApproveAuction,
   listMultipleNftsForAuction,
 } = require("../fixtures");
+const { itParam } = require("mocha-param");
 
 describe("NftAuction", () => {
   let listingFee = ethers.utils.parseEther("0.1");
@@ -215,6 +216,46 @@ describe("NftAuction", () => {
         expect(currentNft[0][0]).to.equal(tokenId);
         expect(currentNft[0][3]).to.equal(true);
       });
+      it("Sets the listing keeper address to the highest", async () => {
+        await nftAuctionInstance.startAuction();
+        const bidAmount = ethers.utils.parseEther("2");
+        const currentNftBeforeBid = await nftAuctionInstance.getCurrentNft();
+        expect(currentNftBeforeBid[0].keeper).to.equal(
+          nftAuctionInstance.address
+        );
+        await nftAuctionInstance.bidOnNft({ value: bidAmount });
+        const currentNftAfterBid = await nftAuctionInstance.getCurrentNft();
+        const bidder = await ethers.getSigner();
+        expect(currentNftAfterBid[0].keeper).to.equal(bidder.address);
+      });
+      itParam(
+        "Sets the current listing price to ${value} ETH on successful bid",
+        [2, 2.1, 3, 10, 2.354, 100],
+        async (value) => {
+          await nftAuctionInstance.startAuction();
+          const bidAmount = ethers.utils.parseEther(value.toString());
+          const currentNftBeforeBid = await nftAuctionInstance.getCurrentNft();
+          const currentPrice = ethers.utils.parseEther("1");
+          expect(currentNftBeforeBid[0].price).to.equal(currentPrice);
+          await nftAuctionInstance.bidOnNft({ value: bidAmount });
+          const currentNftAfterBid = await nftAuctionInstance.getCurrentNft();
+          expect(currentNftAfterBid[0].price).to.equal(bidAmount);
+        }
+      );
+      it("Transfers Nft to bidder (keeper) when Nft is finished aucitoning", async () => {
+        await mine(1000);
+        const tokenId = 3;
+        expect(await nftFactoryInstance.ownerOf(tokenId)).to.equal(
+          nftAuctionInstance.address
+        );
+        const bidAmount = ethers.utils.parseEther("2");
+        await nftAuctionInstance.bidOnNft({ value: bidAmount });
+        await nftAuctionInstance.auctionNextNft();
+        const bidder = await ethers.getSigner();
+        expect(await nftFactoryInstance.ownerOf(tokenId)).to.equal(
+          bidder.address
+        );
+      });
       it("Transfers Nft back to seller if no one bids on it", async () => {
         await mine(1000);
         const tokenId = 3;
@@ -236,6 +277,20 @@ describe("NftAuction", () => {
           "auctionNextNft: Not enough time has ellapsed"
         );
       });
+      itParam(
+        "Reverts bid on Nft when ${value} ETH (below asking price) is sent in bid TX",
+        [0.99, 0.23, 0.13, 0.9999],
+        async (value) => {
+          const { nftAuction } = await loadFixture(listMultipleNftsForAuction);
+          await nftAuction.startAuction();
+          const insufficientBidAmount = ethers.utils.parseEther(
+            value.toString()
+          );
+          await expect(
+            nftAuction.bidOnNft({ value: insufficientBidAmount })
+          ).to.be.revertedWith("bidOnNft: Bid amt lower than price");
+        }
+      );
     });
   });
 });

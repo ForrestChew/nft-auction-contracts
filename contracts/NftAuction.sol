@@ -26,6 +26,12 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
     );
     event NewPrice(uint256 tokenId, uint256 price, uint256 newPrice);
     event AuctionStatus(bool auctionStatus);
+    event NewBid(
+        uint256 tokenId,
+        uint256 oldPrice,
+        uint256 newPrice,
+        address bidder
+    );
 
     modifier auctionActive() {
         require(auctionState == AuctionState.ACTIVE, "Auction must be ACTIVE");
@@ -93,6 +99,17 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         DLLStack._auctionItemStart(firstListingKey);
         auctionState = AuctionState.ACTIVE;
         emit AuctionStatus(true);
+    }
+
+    function bidOnNft() external payable auctionActive {
+        DLLStack.Node memory listing = DLLStack._getTopOfStack();
+        uint256 currentPrice = listing.nftListing.price;
+        require(msg.value > currentPrice, "bidOnNft: Bid amt lower than price");
+        bytes32 listingKey = listing.key;
+        DLLStack._changeNftListingKeeper(listingKey, msg.sender);
+        DLLStack._changeNftListingPrice(listingKey, msg.value);
+        uint256 tokenId = listing.nftListing.tokenId;
+        emit NewBid(tokenId, currentPrice, msg.value, msg.sender);
     }
 
     function auctionNextNft() external onlyOwner auctionActive {
