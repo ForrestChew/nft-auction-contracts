@@ -212,7 +212,7 @@ describe("NftAuction", () => {
       });
     });
     describe("Auction Cycle Reverts", () => {
-      it("Sets the next Nft for auction", async () => {
+      it("Reverts setting the next Nft for auction when not enough time ellapses", async () => {
         const { nftAuction } = await loadFixture(listMultipleNftsForAuction);
         expect(await nftAuction.stackSize()).to.equal(3);
         await expect(nftAuction.auctionNextNft()).to.be.revertedWith(
