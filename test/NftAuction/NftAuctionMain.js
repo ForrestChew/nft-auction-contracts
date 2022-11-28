@@ -183,10 +183,16 @@ describe("NftAuction", () => {
   });
   describe("Starting Auction", () => {
     let nftAuctionInstance;
+    let nftFactoryInstance;
+    let randSigner;
     beforeEach(async () => {
-      const { nftAuction } = await loadFixture(listMultipleNftsForAuction);
+      const { nftAuction, nftFactory, randAccount_1 } = await loadFixture(
+        listMultipleNftsForAuction
+      );
       await nftAuction.startAuction();
       nftAuctionInstance = nftAuction;
+      nftFactoryInstance = nftFactory;
+      randSigner = randAccount_1;
     });
     it("Sets auction state to ACTIVE", async () => {
       const active = 1;
@@ -200,15 +206,25 @@ describe("NftAuction", () => {
     });
     describe("Auction Cycle", () => {
       it("Sets the next Nft for auction", async () => {
-        const { nftAuction } = await loadFixture(listMultipleNftsForAuction);
-        expect(await nftAuction.stackSize()).to.equal(3);
+        expect(await nftAuctionInstance.stackSize()).to.equal(3);
         await mine(1000);
-        await nftAuction.auctionNextNft();
+        await nftAuctionInstance.auctionNextNft();
         const currentNft = await nftAuctionInstance.getCurrentNft();
-        expect(await nftAuction.stackSize()).to.equal(2);
+        expect(await nftAuctionInstance.stackSize()).to.equal(2);
         const tokenId = 2;
         expect(currentNft[0][0]).to.equal(tokenId);
         expect(currentNft[0][3]).to.equal(true);
+      });
+      it("Transfers Nft back to seller if no one bids on it", async () => {
+        await mine(1000);
+        const tokenId = 3;
+        expect(await nftFactoryInstance.ownerOf(tokenId)).to.equal(
+          nftAuctionInstance.address
+        );
+        await nftAuctionInstance.auctionNextNft();
+        expect(await nftFactoryInstance.ownerOf(tokenId)).to.equal(
+          randSigner.address
+        );
       });
     });
     describe("Auction Cycle Reverts", () => {
