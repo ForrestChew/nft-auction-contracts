@@ -64,10 +64,10 @@ contract DLLStack is AuctionItemFactory {
         _nodes[nodeKey].nftListing.isAuctioning = true;
     }
 
-    function _changeNftListingOwner(bytes32 nodeKey, address newOwner)
+    function _changeNftListingKeeper(bytes32 nodeKey, address newKeeper)
         internal
     {
-        _nodes[nodeKey].nftListing.owner = newOwner;
+        _nodes[nodeKey].nftListing.keeper = newKeeper;
     }
 
     function _changeNftListingPrice(bytes32 nodeKey, uint256 newPrice)

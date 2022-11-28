@@ -9,7 +9,7 @@ contract AuctionItemFactory {
         bool isAuctioning;
         address tokenFactAddr;
         address seller;
-        address owner;
+        address keeper;
     }
 
     /*
@@ -33,7 +33,7 @@ contract AuctionItemFactory {
                 isAuctioning: false,
                 tokenFactAddr: _tokenFactAddr,
                 seller: msg.sender,
-                owner: address(this)
+                keeper: address(this)
             })
         );
     }

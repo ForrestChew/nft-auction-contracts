@@ -119,7 +119,7 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
 
     function _nftToKeeper(DLLStack.Node memory listing) private {
         address tokenFactAddr = listing.nftListing.tokenFactAddr;
-        address nftkeeper = listing.nftListing.owner;
+        address nftkeeper = listing.nftListing.keeper;
         uint256 tokenId = listing.nftListing.tokenId;
         address nftSeller = listing.nftListing.seller;
         if (nftkeeper == address(this)) {
