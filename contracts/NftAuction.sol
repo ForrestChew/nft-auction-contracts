@@ -151,7 +151,11 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         }
     }
 
-    function changeListingFee(uint256 newFee) external onlyOwner {
+    function changeListingFee(uint256 newFee)
+        external
+        onlyOwner
+        auctionInactive
+    {
         listingFee = newFee;
     }
 
