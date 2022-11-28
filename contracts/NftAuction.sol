@@ -95,7 +95,7 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         emit AuctionStatus(true);
     }
 
-    function auctionNextNft() external onlyOwner {
+    function auctionNextNft() external onlyOwner auctionActive {
         DLLStack.Node memory listing = _getTopOfStack();
         uint256 startTime = listing.nftListing.startTime;
         require(

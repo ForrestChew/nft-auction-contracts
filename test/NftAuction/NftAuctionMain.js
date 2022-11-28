@@ -231,6 +231,7 @@ describe("NftAuction", () => {
       it("Reverts setting the next Nft for auction when not enough time ellapses", async () => {
         const { nftAuction } = await loadFixture(listMultipleNftsForAuction);
         expect(await nftAuction.stackSize()).to.equal(3);
+        await nftAuction.startAuction();
         await expect(nftAuction.auctionNextNft()).to.be.revertedWith(
           "auctionNextNft: Not enough time has ellapsed"
         );
