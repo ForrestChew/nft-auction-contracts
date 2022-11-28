@@ -206,6 +206,12 @@ describe("NftAuction", () => {
         const tokenId = 2;
         expect(currentNft[0][0]).to.equal(tokenId);
       });
+      it("Pushes finished item key to post bid storage", async () => {
+        await mine(1000);
+        await nftAuctionInstance.auctionNextNft();
+        const postBidItemKeys = await nftAuctionInstance.getPostBidItemKeys();
+        expect(postBidItemKeys.length).to.equal(1);
+      });
       it("Sets the listing keeper address to the highest", async () => {
         await nftAuctionInstance.startAuction();
         const bidAmount = ethers.utils.parseEther("2");
