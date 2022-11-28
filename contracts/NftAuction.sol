@@ -33,12 +33,12 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         address bidder
     );
 
-    modifier auctionActive() {
+    modifier onlyActive() {
         require(auctionState == AuctionState.ACTIVE, "Auction must be ACTIVE");
         _;
     }
 
-    modifier auctionInactive() {
+    modifier onlyInactive() {
         require(
             auctionState == AuctionState.INACTIVE,
             "Auction must be INACTIVE"
@@ -63,7 +63,7 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         address tokenFactAddr,
         uint256 tokenId,
         uint256 price
-    ) external payable auctionInactive {
+    ) external payable onlyInactive {
         require(msg.value == listingFee, "listNft: Incorrect amount");
         DLLStack._pushToStack(tokenFactAddr, tokenId, price);
         IERC721(tokenFactAddr).transferFrom(msg.sender, address(this), tokenId);
@@ -73,7 +73,7 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
     function delistNft(address tokenFactAddr, bytes32 key)
         external
         onlyLister(key)
-        auctionInactive
+        onlyInactive
     {
         uint256 tokenId = DLLStack._nodes[key].nftListing.tokenId;
         uint256 price = DLLStack._nodes[key].nftListing.price;
@@ -101,7 +101,7 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         emit AuctionStatus(true);
     }
 
-    function bidOnNft() external payable auctionActive {
+    function bidOnNft() external payable onlyActive {
         DLLStack.Node memory listing = DLLStack._getTopOfStack();
         uint256 currentPrice = listing.nftListing.price;
         require(msg.value > currentPrice, "bidOnNft: Bid amt lower than price");
@@ -112,7 +112,7 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         emit NewBid(tokenId, currentPrice, msg.value, msg.sender);
     }
 
-    function auctionNextNft() external onlyOwner auctionActive {
+    function auctionNextNft() external onlyOwner onlyActive {
         DLLStack.Node memory listing = _getTopOfStack();
         uint256 startTime = listing.nftListing.startTime;
         require(
@@ -151,11 +151,7 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         }
     }
 
-    function changeListingFee(uint256 newFee)
-        external
-        onlyOwner
-        auctionInactive
-    {
+    function changeListingFee(uint256 newFee) external onlyOwner onlyInactive {
         listingFee = newFee;
     }
 
