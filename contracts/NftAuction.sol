@@ -95,9 +95,6 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
         emit AuctionStatus(true);
     }
 
-    // TODO: FIGURE OUT A BID SYSTEM.
-    // TODO: IMPLEMENT A WAY TO TRANSFER THE NFT TO EITHER THE HIGHEST BIDDER,
-    // OR BACK TO THE ORIGINAL SELLER IF NO ONE BIDS ON IT.
     function auctionNextNft() external onlyOwner {
         DLLStack.Node memory listing = _getTopOfStack();
         uint256 startTime = listing.nftListing.startTime;
