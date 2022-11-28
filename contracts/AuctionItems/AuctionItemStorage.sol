@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./AuctionItemFactory.sol";
 
-contract DLLStack is AuctionItemFactory {
+contract AuctionItemStorage is AuctionItemFactory {
     struct Node {
         AuctionItem nftListing;
         bytes32 key;
