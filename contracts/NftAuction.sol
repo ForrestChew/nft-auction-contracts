@@ -105,6 +105,7 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
             block.timestamp > startTime + 15 minutes,
             "auctionNextNft: Not enough time has ellapsed"
         );
+        _nftToKeeper(listing);
         DLLStack._popFromStack();
         DLLStack.Node memory nextListing = _getTopOfStack();
         DLLStack._auctionItemStart(nextListing.key);
@@ -114,6 +115,26 @@ contract NftAuction is ReentrancyGuard, Ownable, DLLStack {
             nextListing.nftListing.tokenId,
             nextListing.nftListing.price
         );
+    }
+
+    function _nftToKeeper(DLLStack.Node memory listing) private {
+        address tokenFactAddr = listing.nftListing.tokenFactAddr;
+        address nftkeeper = listing.nftListing.owner;
+        uint256 tokenId = listing.nftListing.tokenId;
+        address nftSeller = listing.nftListing.seller;
+        if (nftkeeper == address(this)) {
+            IERC721(tokenFactAddr).transferFrom(
+                address(this),
+                nftSeller,
+                tokenId
+            );
+        } else {
+            IERC721(tokenFactAddr).transferFrom(
+                address(this),
+                nftkeeper,
+                tokenId
+            );
+        }
     }
 
     function changeListingFee(uint256 newFee) external onlyOwner {
