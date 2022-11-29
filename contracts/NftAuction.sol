@@ -102,6 +102,12 @@ contract NftAuction is Ownable, AuctionItemStorage, Settlements {
         emit AuctionStatus(true);
     }
 
+    function endAuction() external onlyOwner onlyActive {
+        require(stackSize == 0, "endAuction: auction has not ended");
+        auctionState = AuctionState.INACTIVE;
+        emit AuctionStatus(false);
+    }
+
     function bidOnNft(uint256 bid) external payable onlyActive {
         Node memory listing = _getTopOfStack();
         uint256 currentPrice = listing.nftListing.price;
