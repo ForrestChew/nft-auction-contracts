@@ -261,6 +261,15 @@ describe("NftAuction", () => {
           randSigner.address
         );
       });
+      it("Ends auction", async () => {
+        for (let i = 0; i < 3; i++) {
+          await mine(1000);
+          await nftAuctionInstance.auctionNextNft();
+        }
+        await nftAuctionInstance.endAuction();
+        const INACTIVE = 0;
+        expect(await nftAuctionInstance.auctionState()).to.equal(INACTIVE);
+      });
     });
     describe("Auction Cycle Reverts", () => {
       it("Reverts setting the next Nft for auction when not enough time ellapses", async () => {
@@ -296,6 +305,24 @@ describe("NftAuction", () => {
           ).to.be.revertedWith("bidOnNft: Bid must be > curPrice");
         }
       );
+      it("Reverts if non owner address tries to end auction", async () => {
+        for (let i = 0; i < 3; i++) {
+          await mine(1000);
+          await nftAuctionInstance.auctionNextNft();
+        }
+        await expect(
+          nftAuctionInstance.connect(randSigner).endAuction()
+        ).to.be.revertedWith("Ownable: caller is not the owner");
+      });
+      it("Reverts if not all Nfts have finished auctioning", async () => {
+        for (let i = 0; i < 2; i++) {
+          await mine(1000);
+          await nftAuctionInstance.auctionNextNft();
+        }
+        await expect(nftAuctionInstance.endAuction()).to.be.revertedWith(
+          "endAuction: auction has not ended"
+        );
+      });
     });
   });
   describe("Auction Settlements", () => {
