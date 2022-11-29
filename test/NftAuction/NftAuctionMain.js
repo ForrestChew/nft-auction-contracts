@@ -9,6 +9,7 @@ const {
   createSingleNftAndApproveAuction,
   createMultipleNftsAndApproveAuction,
   listMultipleNftsForAuction,
+  buyNftAtAuction,
 } = require("../fixtures");
 const { itParam } = require("mocha-param");
 
@@ -230,12 +231,10 @@ describe("NftAuction", () => {
       });
       it("Sets the bidders refundable bid balance", async () => {
         const bidAmount = ethers.utils.parseEther("2");
-        const refundableBidBalBeforeBid =
-          await nftAuctionInstance.getRefundableBalance();
+        const refundableBidBalBeforeBid = await nftAuctionInstance.getBalance();
         expect(refundableBidBalBeforeBid).to.equal(0);
         await nftAuctionInstance.bidOnNft(bidAmount, { value: biddingFee });
-        const refundableBidBalAfterBid =
-          await nftAuctionInstance.getRefundableBalance();
+        const refundableBidBalAfterBid = await nftAuctionInstance.getBalance();
         expect(refundableBidBalAfterBid).to.equal(biddingFee);
       });
       itParam(
@@ -297,6 +296,113 @@ describe("NftAuction", () => {
           ).to.be.revertedWith("bidOnNft: Bid must be > curPrice");
         }
       );
+    });
+  });
+  describe("Auction Settlements", () => {
+    let nftAuctionInstance;
+    let nftFactoryInstance;
+    let signer;
+    let soldItemKey;
+    const itemPrice = ethers.utils.parseEther("2");
+    beforeEach(async () => {
+      const { nftAuction, nftFactory, randAccount_1, soldItemKeyArr } =
+        await loadFixture(buyNftAtAuction);
+      nftAuctionInstance = nftAuction;
+      nftFactoryInstance = nftFactory;
+      signer = randAccount_1;
+      soldItemKey = soldItemKeyArr[0];
+    });
+    describe("Settle Nft listing", () => {
+      it("Transfers bought Nft to bidder", async () => {
+        const tokenId = 1;
+        expect(await nftFactoryInstance.ownerOf(tokenId)).to.equal(
+          nftAuctionInstance.address
+        );
+        const keeper = await ethers.getSigner();
+        await nftAuctionInstance.settleItem(soldItemKey, {
+          value: itemPrice,
+        });
+        expect(await nftFactoryInstance.ownerOf(tokenId)).to.equal(
+          keeper.address
+        );
+      });
+      it("Adjusts balances of seller and keeper", async () => {
+        await nftAuctionInstance.settleItem(soldItemKey, {
+          value: itemPrice,
+        });
+        const bidFee = ethers.utils.parseEther("0.01");
+        expect(await nftAuctionInstance.getBalance()).to.equal(bidFee);
+        expect(await nftAuctionInstance.connect(signer).getBalance()).to.equal(
+          itemPrice
+        );
+      });
+      it("Deletes auction item", async () => {
+        await nftAuctionInstance.settleItem(soldItemKey, {
+          value: itemPrice,
+        });
+        const postBidItemKeysArr =
+          await nftAuctionInstance.getPostBidItemKeys();
+        expect(postBidItemKeysArr.length).to.equal(0);
+        const nftListingsArr = await nftAuctionInstance.getAllListings();
+        expect(nftListingsArr.length).to.equal(0);
+      });
+    });
+    describe("Withdraw ETH", () => {
+      beforeEach(async () => {
+        await nftAuctionInstance.settleItem(soldItemKey, {
+          value: itemPrice,
+        });
+      });
+      it("Seller withdraws Nft sale funds", async () => {
+        const balanceBeforeWithdrawl = await nftAuctionInstance
+          .connect(signer)
+          .getBalance();
+        const itemPrice = ethers.utils.parseEther("2");
+        expect(balanceBeforeWithdrawl).to.equal(itemPrice);
+        await nftAuctionInstance.connect(signer).withdrawEth();
+        const balanceAfterWithdrawl = await nftAuctionInstance
+          .connect(signer)
+          .getBalance();
+        expect(balanceAfterWithdrawl).to.equal(0);
+      });
+      it("Bidder withdraws bid fees", async () => {
+        const balanceBeforeWithdrawl = await nftAuctionInstance.getBalance();
+        const bidFee = ethers.utils.parseEther("0.01");
+        expect(balanceBeforeWithdrawl).to.equal(bidFee);
+        await nftAuctionInstance.withdrawEth();
+        const balanceAfterWithdrawl = await nftAuctionInstance.getBalance();
+        expect(balanceAfterWithdrawl).to.equal(0);
+      });
+    });
+  });
+  describe("Auction Settlements Reverts", () => {
+    let nftAuctionInstance;
+    let nftFactoryInstance;
+    let signer;
+    let soldItemKey;
+    const itemPrice = ethers.utils.parseEther("2");
+    beforeEach(async () => {
+      const { nftAuction, nftFactory, randAccount_1, soldItemKeyArr } =
+        await loadFixture(buyNftAtAuction);
+      nftAuctionInstance = nftAuction;
+      nftFactoryInstance = nftFactory;
+      signer = randAccount_1;
+      soldItemKey = soldItemKeyArr[0];
+    });
+    it("Reverts non won Nft settlement", async () => {
+      await expect(
+        nftAuctionInstance.connect(signer).settleItem(soldItemKey, {
+          value: itemPrice,
+        })
+      ).to.revertedWith("settleItem: Wrong addr");
+    });
+    it("Reverts Nft settlement when wrong amount is paid", async () => {
+      const wrongItemPrice = ethers.utils.parseEther("1");
+      await expect(
+        nftAuctionInstance.settleItem(soldItemKey, {
+          value: wrongItemPrice,
+        })
+      ).to.revertedWith("settleItem: Wrong amount");
     });
   });
 });
