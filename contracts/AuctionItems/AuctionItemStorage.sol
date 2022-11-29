@@ -32,7 +32,7 @@ contract AuctionItemStorage is AuctionItemFactory, PostBidAuctionItemStorage {
                 abi.encodePacked(tokenFactAddr, tokenId, price, block.timestamp)
             )
         );
-        _nodes[_topOfStackKey].prev = nodeKey;
+        if (_topOfStackKey != bytes32(0)) _nodes[_topOfStackKey].prev = nodeKey;
         _nodes[nodeKey] = Node({
             nftListing: AuctionItemFactory._createItem(
                 tokenFactAddr,
@@ -48,10 +48,9 @@ contract AuctionItemStorage is AuctionItemFactory, PostBidAuctionItemStorage {
     }
 
     function _popFromStack() internal {
-        // bytes32 topOfStackKeyTmp = _topOfStackKey;
+        bytes32 topOfStackKeyTmp = _topOfStackKey;
         _topOfStackKey = _nodes[_topOfStackKey].next;
-        PostBidAuctionItemStorage._addPostBidItemKey(_topOfStackKey);
-        // delete _nodes[topOfStackKeyTmp];
+        PostBidAuctionItemStorage._addPostBidItemKey(topOfStackKeyTmp);
         stackSize--;
     }
 
