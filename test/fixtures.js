@@ -1,3 +1,5 @@
+const { mine } = require("@nomicfoundation/hardhat-network-helpers");
+
 const deployNftFactoryFixture = async () => {
   const [nftFactoryDeployer] = await ethers.getSigners();
   const NftFactory = await ethers.getContractFactory("NftFactory");
@@ -24,6 +26,7 @@ const contractFixtures = async () => {
   const { nftFactory, nftFactoryDeployer } = await deployNftFactoryFixture();
   const { nftAuction, auctionOwner, randAccount_1 } =
     await deployNftAuctionFixture();
+
   return {
     nftFactory,
     nftFactoryDeployer,
@@ -33,12 +36,28 @@ const contractFixtures = async () => {
   };
 };
 
+const createNftAndApproveAuction = async (
+  signer,
+  nftAuction,
+  nftFactory,
+  tokenId,
+  tokenUri
+) => {
+  await nftFactory.connect(signer).createCollectable(tokenUri);
+  await nftFactory.connect(signer).approve(nftAuction.address, tokenId);
+};
+
 const createSingleNftAndApproveAuction = async () => {
   const { nftAuction, nftFactory, randAccount_1 } = await contractFixtures();
   const tokenUri = "https://testtokenuri.uri";
-  await nftFactory.connect(randAccount_1).createCollectable(tokenUri);
   const tokenId = 1;
-  await nftFactory.connect(randAccount_1).approve(nftAuction.address, tokenId);
+  await createNftAndApproveAuction(
+    randAccount_1,
+    nftAuction,
+    nftFactory,
+    tokenId,
+    tokenUri
+  );
 
   return { nftFactory, nftAuction, randAccount_1, tokenId };
 };
@@ -48,29 +67,49 @@ const createMultipleNftsAndApproveAuction = async () => {
   const tokenUri = "https://testtokenuri.uri";
   for (let i = 0; i < 5; i++) {
     const tokenId = i + 1;
-    await nftFactory.connect(randAccount_1).createCollectable(tokenUri);
-    await nftFactory
-      .connect(randAccount_1)
-      .approve(nftAuction.address, tokenId);
+    await createNftAndApproveAuction(
+      randAccount_1,
+      nftAuction,
+      nftFactory,
+      tokenId,
+      tokenUri
+    );
   }
   return { nftFactory, nftAuction, randAccount_1 };
+};
+
+const listNftToAuction = async (signer, nftAuction, nftFactory, tokenId) => {
+  const startingPrice = ethers.utils.parseEther("1");
+  const listingFee = ethers.utils.parseEther("0.1");
+  await nftAuction
+    .connect(signer)
+    .listNft(nftFactory.address, tokenId, startingPrice, { value: listingFee });
 };
 
 const listMultipleNftsForAuction = async () => {
   const { nftAuction, nftFactory, randAccount_1 } =
     await createMultipleNftsAndApproveAuction();
-  const startingPrice = ethers.utils.parseEther("1");
-  const listingFee = ethers.utils.parseEther("0.1");
   for (let i = 0; i < 3; i++) {
     const tokenId = i + 1;
-    await nftAuction
-      .connect(randAccount_1)
-      .listNft(nftFactory.address, tokenId, startingPrice, {
-        value: listingFee,
-      });
+    await listNftToAuction(randAccount_1, nftAuction, nftFactory, tokenId);
   }
 
   return { nftAuction, nftFactory, randAccount_1 };
+};
+
+const buyNftAtAuction = async () => {
+  const { nftFactory, nftAuction, randAccount_1, tokenId } =
+    await createSingleNftAndApproveAuction();
+  await listNftToAuction(randAccount_1, nftAuction, nftFactory, tokenId);
+  await nftAuction.startAuction();
+  const bidAmount = ethers.utils.parseEther("2");
+  const bidFee = ethers.utils.parseEther("0.01");
+  await nftAuction.bidOnNft(bidAmount, { value: bidFee });
+  await mine(1000);
+  await nftAuction.auctionNextNft();
+  const soldItemKeyArr = await nftAuction.getPostBidItemKeys();
+
+  return { nftAuction, nftFactory, randAccount_1, soldItemKeyArr };
 };
 
 module.exports = {
@@ -80,4 +119,5 @@ module.exports = {
   createSingleNftAndApproveAuction,
   createMultipleNftsAndApproveAuction,
   listMultipleNftsForAuction,
+  buyNftAtAuction,
 };
