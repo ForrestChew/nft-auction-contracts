@@ -111,19 +111,18 @@ contract NftAuction is
         emit AuctionStatus(true);
     }
 
-    function bidOnNft() external payable onlyActive {
+    function bidOnNft(uint256 bid) external payable onlyActive {
         AuctionItemStorage.Node memory listing = AuctionItemStorage
             ._getTopOfStack();
         uint256 currentPrice = listing.nftListing.price;
-        require(
-            msg.value > currentPrice / 2,
-            "bidOnNft: Bid amt lower than price"
-        );
+        require(msg.value == biddingFee, "bidOnNft: Needs bid fee");
+        require(bid > currentPrice, "bidOnNft: Bid must be > curPrice");
+        Settlements._balances[msg.sender] += msg.value;
         bytes32 listingKey = listing.key;
         AuctionItemStorage._changeNftListingKeeper(listingKey, msg.sender);
-        AuctionItemStorage._changeNftListingPrice(listingKey, msg.value);
+        AuctionItemStorage._changeNftListingPrice(listingKey, bid);
         uint256 tokenId = listing.nftListing.tokenId;
-        emit NewBid(tokenId, currentPrice, msg.value, msg.sender);
+        emit NewBid(tokenId, currentPrice, bid, msg.sender);
     }
 
     function auctionNextNft() external onlyOwner onlyActive {
