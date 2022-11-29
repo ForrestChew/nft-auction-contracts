@@ -8,9 +8,14 @@ const deployNftFactoryFixture = async () => {
 
 const deployNftAuctionFixture = async () => {
   const listingFee = ethers.utils.parseEther("0.1");
+  const biddingFee = ethers.utils.parseEther("0.01");
   const [auctionOwner, randAccount_1] = await ethers.getSigners();
   const NftAuction = await ethers.getContractFactory("NftAuction");
-  const nftAuction = await NftAuction.deploy(auctionOwner.address, listingFee);
+  const nftAuction = await NftAuction.deploy(
+    auctionOwner.address,
+    listingFee,
+    biddingFee
+  );
 
   return { nftAuction, auctionOwner, randAccount_1 };
 };
