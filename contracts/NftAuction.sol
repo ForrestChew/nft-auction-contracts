@@ -6,8 +6,14 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./AuctionItems/AuctionItemStorage.sol";
+import "./Settlements.sol";
 
-contract NftAuction is ReentrancyGuard, Ownable, AuctionItemStorage {
+contract NftAuction is
+    ReentrancyGuard,
+    Ownable,
+    AuctionItemStorage,
+    Settlements
+{
     enum AuctionState {
         INACTIVE,
         ACTIVE
@@ -17,6 +23,7 @@ contract NftAuction is ReentrancyGuard, Ownable, AuctionItemStorage {
 
     address public auctionOwner;
     uint256 public listingFee;
+    uint256 public biddingFee;
 
     event AuctionNft(
         address seller,
@@ -54,9 +61,14 @@ contract NftAuction is ReentrancyGuard, Ownable, AuctionItemStorage {
         _;
     }
 
-    constructor(address _auctionOwner, uint256 _listingFee) {
+    constructor(
+        address _auctionOwner,
+        uint256 _listingFee,
+        uint256 _biddingFee
+    ) {
         auctionOwner = _auctionOwner;
         listingFee = _listingFee;
+        biddingFee = _biddingFee;
     }
 
     function listNft(
@@ -85,6 +97,7 @@ contract NftAuction is ReentrancyGuard, Ownable, AuctionItemStorage {
     function changeNftPrice(bytes32 key, uint256 newPrice)
         external
         onlyLister(key)
+        onlyInactive
     {
         uint256 price = AuctionItemStorage._nodes[key].nftListing.price;
         uint256 tokenId = AuctionItemStorage._nodes[key].nftListing.tokenId;
@@ -92,7 +105,7 @@ contract NftAuction is ReentrancyGuard, Ownable, AuctionItemStorage {
         emit NewPrice(tokenId, price, newPrice);
     }
 
-    function startAuction() external onlyOwner {
+    function startAuction() external onlyOwner onlyInactive {
         require(AuctionItemStorage.stackSize > 0, "startAuction: No listings");
         auctionState = AuctionState.ACTIVE;
         emit AuctionStatus(true);
@@ -102,7 +115,10 @@ contract NftAuction is ReentrancyGuard, Ownable, AuctionItemStorage {
         AuctionItemStorage.Node memory listing = AuctionItemStorage
             ._getTopOfStack();
         uint256 currentPrice = listing.nftListing.price;
-        require(msg.value > currentPrice, "bidOnNft: Bid amt lower than price");
+        require(
+            msg.value > currentPrice / 2,
+            "bidOnNft: Bid amt lower than price"
+        );
         bytes32 listingKey = listing.key;
         AuctionItemStorage._changeNftListingKeeper(listingKey, msg.sender);
         AuctionItemStorage._changeNftListingPrice(listingKey, msg.value);
@@ -117,7 +133,7 @@ contract NftAuction is ReentrancyGuard, Ownable, AuctionItemStorage {
             block.timestamp > startTime + 15 minutes,
             "auctionNextNft: Not enough time has ellapsed"
         );
-        _nftToKeeper(listing);
+        _nftToSeller(listing);
         AuctionItemStorage._popFromStack();
         AuctionItemStorage.Node memory nextListing = _getTopOfStack();
         emit AuctionNft(
@@ -128,7 +144,15 @@ contract NftAuction is ReentrancyGuard, Ownable, AuctionItemStorage {
         );
     }
 
-    function _nftToKeeper(AuctionItemStorage.Node memory listing) private {
+    function changeListingFee(uint256 newFee) external onlyOwner onlyInactive {
+        listingFee = newFee;
+    }
+
+    function withdrawNft(bytes32 key) external payable {
+        // require()
+    }
+
+    function _nftToSeller(AuctionItemStorage.Node memory listing) private {
         address tokenFactAddr = listing.nftListing.tokenFactAddr;
         address nftkeeper = listing.nftListing.keeper;
         uint256 tokenId = listing.nftListing.tokenId;
@@ -139,17 +163,7 @@ contract NftAuction is ReentrancyGuard, Ownable, AuctionItemStorage {
                 nftSeller,
                 tokenId
             );
-        } else {
-            IERC721(tokenFactAddr).transferFrom(
-                address(this),
-                nftkeeper,
-                tokenId
-            );
         }
-    }
-
-    function changeListingFee(uint256 newFee) external onlyOwner onlyInactive {
-        listingFee = newFee;
     }
 
     function getCurrentNft()
