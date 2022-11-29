@@ -228,6 +228,16 @@ describe("NftAuction", () => {
         const bidder = await ethers.getSigner();
         expect(currentNftAfterBid[0].keeper).to.equal(bidder.address);
       });
+      it("Sets the bidders refundable bid balance", async () => {
+        const bidAmount = ethers.utils.parseEther("2");
+        const refundableBidBalBeforeBid =
+          await nftAuctionInstance.getRefundableBalance();
+        expect(refundableBidBalBeforeBid).to.equal(0);
+        await nftAuctionInstance.bidOnNft(bidAmount, { value: biddingFee });
+        const refundableBidBalAfterBid =
+          await nftAuctionInstance.getRefundableBalance();
+        expect(refundableBidBalAfterBid).to.equal(biddingFee);
+      });
       itParam(
         "Sets the current listing price to ${value} ETH on successful bid",
         [2, 2.1, 3, 10, 2.354, 100],
